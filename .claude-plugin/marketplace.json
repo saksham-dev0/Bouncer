@@ -1,0 +1,20 @@
+{
+  "name": "my-marketplace",
+  "owner": {
+    "name": "Your Name"
+  },
+  "metadata": {
+    "description": "Marketplace hosting my Claude Code plugins",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "my-plugin",
+      "source": "./plugins/my-plugin",
+      "description": "Short description of what my-plugin does",
+      "version": "0.1.0",
+      "category": "productivity",
+      "keywords": ["example"]
+    }
+  ]
+}
