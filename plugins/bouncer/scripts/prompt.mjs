@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { readStdinJson, emit } from '../lib/io.mjs';
 import { readSession, writeSession } from '../lib/state.mjs';
@@ -69,11 +70,18 @@ async function main() {
   }
 
   const cfg = loadConfig(cwd);
-  const opts = { model: cfg.model, timeoutMs: cfg.timeoutMs, apiKey };
+  const deadline = Date.now() + cfg.budgetMs;
   let task = taskText;
 
+  // Turn gating off before any network call: if this hook is killed mid-map, the old map must not stay enforced.
+  if (session.active) {
+    session.active = false;
+    writeSession(sessionId, session);
+  }
+
   if (!oneShot && session.task && session.map) {
-    const f = await systemOne({ ...followupRequest(session.task, taskText), ...opts });
+    const timeoutMs = Math.max(1, Math.min(cfg.timeoutMs, deadline - Date.now()));
+    const f = await systemOne({ ...followupRequest(session.task, taskText), model: cfg.model, timeoutMs, apiKey });
     if (f.ok) {
       const noul = (k) => (typeof f.answers[k]?.noul === 'number' ? f.answers[k].noul : 1);
       if (noul('needs_code') < NEEDS_CODE_MIN) {
@@ -94,9 +102,14 @@ async function main() {
     }
   }
 
-  const repo = repoRoot(cwd);
+  let repo = repoRoot(cwd);
+  try {
+    repo = realpathSync(repo);
+  } catch {
+    // keep the unresolved path
+  }
   const files = loadCandidates(repo, cfg, join(bouncerHome(), 'cache'));
-  const map = await buildMap({ task, prompt: taskText, repo, files, cfg, apiKey });
+  const map = await buildMap({ task, prompt: taskText, repo, files, cfg, apiKey, deadline });
 
   if (!map.ok) {
     deactivate(session);
@@ -107,7 +120,7 @@ async function main() {
   }
   if (!map.needsCode) {
     session.task = task;
-    session.active = false;
+    deactivate(session); // the old map belongs to a different task; a later follow-up must not revive it
     writeSession(sessionId, session);
     appendLog({ kind: 'map', status: 'no_code', inputTokens: map.inputTokens, latencyMs: map.latencyMs });
     return;

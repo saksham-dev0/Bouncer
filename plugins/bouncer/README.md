@@ -21,10 +21,12 @@ Then set your TypeSafe API key (get one at https://console.typesafe.ai/keys). Pi
 ```
 
 Claude Code passes `env` to Bouncer's hooks. `settings.local.json` is meant to
-stay on your machine. Check that it is git-ignored before you add a key:
+stay on your machine. Before you add a key, make sure it is git-ignored and not
+already tracked:
 
 ```bash
-git check-ignore .claude/settings.local.json || echo ".claude/settings.local.json" >> .gitignore
+git ls-files --error-unmatch .claude/settings.local.json 2>/dev/null && echo "TRACKED: run 'git rm --cached .claude/settings.local.json' first"
+git check-ignore -q .claude/settings.local.json || printf '\n.claude/settings.local.json\n' >> .gitignore
 ```
 
 Never put the key in `.claude/settings.json`, because that file is usually committed.
@@ -56,6 +58,8 @@ the current map.
 - **Always sent to TypeSafe:** your prompt text, file paths, and function or class names.
 - **With `privacy: "content"` (the default):** also the first 40 lines of the top ~20 candidate files.
 - **With `privacy: "symbols"`:** no file contents at all.
+- **Never sent:** secret-looking files (`.env*`, `*.pem`, `*.key`, `id_rsa*`, `*credential*`, `*secret*`, `.npmrc`, `.netrc`, `*.tfvars` and similar) are skipped entirely. Lines that look like `password: ...`, `token = ...` or `api_key: ...` are replaced with `[redacted]` in file heads.
+- **Never scanned:** your home directory. Bouncer does nothing if Claude Code is started in `~`.
 
 ## Settings
 

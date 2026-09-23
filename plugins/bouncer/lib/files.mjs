@@ -1,17 +1,22 @@
 import { execFileSync } from 'node:child_process';
 import { readdirSync, statSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { homedir } from 'node:os';
 import { createHash } from 'node:crypto';
 
 const EXCLUDE_DIR_RE = /(^|\/)(node_modules|dist|build|out|vendor|\.git|\.next|coverage|__pycache__|target)\//;
 const EXCLUDE_FILE_RE =
   /(\.lock|\.min\.(js|css)|\.map|\.(png|jpe?g|gif|webp|ico|svg|pdf|zip|gz|tar|woff2?|ttf|eot|mp[34]|mov|wasm|so|dylib|dll|exe|bin|jar|class|pyc))$|(^|\/)(package-lock\.json|pnpm-lock\.yaml|go\.sum)$/i;
+// Never scored, never sent, never blocked.
+const SECRET_RE =
+  /(^|\/)(\.env(\.[^/]*)?|\.npmrc|\.netrc|\.pypirc|id_rsa[^/]*|id_ed25519[^/]*|id_ecdsa[^/]*)$|\.(pem|key|p12|pfx|jks|keystore|tfvars)$|(^|\/)[^/]*(credential|secret)[^/]*$/i;
+const SECRET_LINE_RE = /(pass(word|wd)?|secret|token|api[_-]?key|private[_-]?key|access[_-]?key)\s*[:=]/i;
 const SYMBOL_RE =
   /\b(?:function|class|def|fn|func|interface|type|struct|enum|trait)\s+([A-Za-z_$][\w$]*)|\bexport\s+(?:default\s+)?(?:async\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)/g;
 const MAX_FILE_BYTES = 1_000_000;
 
 export function isCandidatePath(rel) {
-  return !EXCLUDE_DIR_RE.test(rel) && !EXCLUDE_FILE_RE.test(rel);
+  return !EXCLUDE_DIR_RE.test(rel) && !EXCLUDE_FILE_RE.test(rel) && !SECRET_RE.test(rel);
 }
 
 export function repoRoot(cwd) {
@@ -23,6 +28,7 @@ export function repoRoot(cwd) {
 }
 
 export function listFiles(repo, max) {
+  if (resolve(repo) === resolve(homedir())) return []; // never scan a whole home directory
   try {
     const out = execFileSync('git', ['ls-files', '-z', '-co', '--exclude-standard'], {
       cwd: repo,
@@ -124,7 +130,12 @@ export function loadCandidates(repo, cfg, cacheDir) {
 
 export function readHead(repo, rel, cfg) {
   try {
-    return readFileSync(join(repo, rel), 'utf8').split('\n').slice(0, cfg.headLines).join('\n').slice(0, cfg.maxHeadChars);
+    return readFileSync(join(repo, rel), 'utf8')
+      .split('\n')
+      .slice(0, cfg.headLines)
+      .map((line) => (SECRET_LINE_RE.test(line) ? '[redacted]' : line))
+      .join('\n')
+      .slice(0, cfg.maxHeadChars);
   } catch {
     return '';
   }

@@ -9,6 +9,7 @@ export const DEFAULTS = {
   blockBelow: 0.15,
   tinyFileLines: 30,
   timeoutMs: 8000,
+  budgetMs: 20000,
   model: 'jev-latest',
   skimBatchSize: 300,
   maxCandidates: 5000,

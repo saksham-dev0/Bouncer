@@ -31,9 +31,10 @@ export async function systemOne({ state, questions, model, timeoutMs, apiKey }) 
 
 export async function askBatched({ state, questions, batchSize, ...opts }) {
   const keys = Object.keys(questions);
+  const size = Math.max(1, Math.floor(batchSize) || 1);
   const chunks = [];
-  for (let i = 0; i < keys.length; i += batchSize) {
-    chunks.push(Object.fromEntries(keys.slice(i, i + batchSize).map((k) => [k, questions[k]])));
+  for (let i = 0; i < keys.length; i += size) {
+    chunks.push(Object.fromEntries(keys.slice(i, i + size).map((k) => [k, questions[k]])));
   }
   const results = await Promise.all(chunks.map((chunk) => systemOne({ state, questions: chunk, ...opts })));
   const merged = { answers: {}, inputTokens: 0, failed: 0, total: chunks.length, model: undefined, latencyMs: 0 };

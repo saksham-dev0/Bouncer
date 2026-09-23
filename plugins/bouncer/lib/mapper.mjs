@@ -10,6 +10,7 @@ const SUPPORTING_MIN = 1.5;
 const NEEDS_CODE_MIN = 0.3;
 const DIR_KEEP_MIN = 0.3;
 const SKIM_FALLBACK_MIN = 0.6;
+const CLOSE_LOOK_MIN_MS = 2000; // skip the close look when less budget than this remains
 
 export function isContextFile(rel) {
   return CONTEXT_FILE_RE.test(rel);
@@ -74,15 +75,17 @@ async function directoryPass(files, state, opts, cfg) {
   return { pool: files.filter((f) => keep.has(groupKey(f.path))), inputTokens: r.inputTokens, latencyMs: r.latencyMs };
 }
 
-export async function buildMap({ task, prompt, repo, files, cfg, apiKey }) {
-  const opts = { model: cfg.model, timeoutMs: cfg.timeoutMs, apiKey };
+export async function buildMap({ task, prompt, repo, files, cfg, apiKey, deadline = Date.now() + cfg.budgetMs }) {
+  const remaining = () => deadline - Date.now();
+  const callOpts = () => ({ model: cfg.model, apiKey, timeoutMs: Math.max(1, Math.min(cfg.timeoutMs, remaining())) });
   const state = { task };
   let pool = files;
   let inputTokens = 0;
   let latencyMs = 0;
 
+  if (remaining() <= 0) return { ok: false, error: 'budget' };
   if (files.length > cfg.dirPassThreshold) {
-    const d = await directoryPass(files, state, opts, cfg);
+    const d = await directoryPass(files, state, callOpts(), cfg);
     pool = d.pool;
     inputTokens += d.inputTokens;
     latencyMs += d.latencyMs;
@@ -94,7 +97,8 @@ export async function buildMap({ task, prompt, repo, files, cfg, apiKey }) {
     keyToPath.set(`f_${i}`, f.path);
     skimQs[`f_${i}`] = skimQuestion(f);
   });
-  const s = await askBatched({ state, questions: skimQs, batchSize: cfg.skimBatchSize, ...opts });
+  if (remaining() <= 0) return { ok: false, error: 'budget' };
+  const s = await askBatched({ state, questions: skimQs, batchSize: cfg.skimBatchSize, ...callOpts() });
   inputTokens += s.inputTokens;
   latencyMs += s.latencyMs;
   if (s.failed === s.total) return { ok: false, error: 'jev_unavailable' };
@@ -119,7 +123,8 @@ export async function buildMap({ task, prompt, repo, files, cfg, apiKey }) {
 
   let close = {};
   if (top.length) {
-    const c = await systemOne({ state, questions: closeQs, ...opts });
+    const c =
+      remaining() >= CLOSE_LOOK_MIN_MS ? await systemOne({ state, questions: closeQs, ...callOpts() }) : { ok: false, error: 'budget', latencyMs: 0 };
     latencyMs += c.latencyMs;
     if (c.ok) {
       inputTokens += c.inputTokens;
