@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/prompt.mjs\"", "timeout": 30 }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Read", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/gate.mjs\"", "timeout": 5 }] }
+    ]
+  }
+}

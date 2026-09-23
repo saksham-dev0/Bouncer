@@ -1,0 +1,10 @@
+{
+  "name": "bouncer",
+  "version": "0.1.0",
+  "description": "TypeSafe Jev picks the files each prompt needs and skips irrelevant reads, so Claude stops reading half your repo.",
+  "author": { "name": "Saksham Sharma" },
+  "homepage": "https://github.com/saksham-dev0/Bouncer",
+  "repository": "https://github.com/saksham-dev0/Bouncer",
+  "license": "MIT",
+  "keywords": ["tokens", "context", "typesafe", "jev", "files"]
+}
