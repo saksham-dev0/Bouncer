@@ -1,0 +1,5 @@
+// {"repo": "<path relative to where you run eval, or absolute>", "task": "...", "needed": ["repo/relative/path"]}
+// Add 10+ cases from your own repos before trusting the numbers. These three run against this repo from its root.
+{"repo": ".", "task": "change how long Bouncer waits for TypeSafe before giving up", "needed": ["plugins/bouncer/lib/config.mjs", "plugins/bouncer/lib/jev.mjs"]}
+{"repo": ".", "task": "make the read gate message shorter", "needed": ["plugins/bouncer/lib/gate.mjs"]}
+{"repo": ".", "task": "add Rust impl blocks to symbol extraction", "needed": ["plugins/bouncer/lib/files.mjs", "plugins/bouncer/test/files.test.mjs"]}
