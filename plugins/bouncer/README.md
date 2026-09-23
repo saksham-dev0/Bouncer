@@ -6,7 +6,7 @@ reads get skipped, so Claude stops reading half your repo.
 ## Install
 
 ```
-/plugin marketplace add saksham-dev0/claude-plugin
+/plugin marketplace add saksham-dev0/Bouncer
 /plugin install bouncer@my-marketplace
 ```
 

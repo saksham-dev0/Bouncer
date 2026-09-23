@@ -26,7 +26,7 @@ answer. **`/bouncer:off`** turns it off.
 export TYPESAFE_API_KEY="ts_..."          # from console.typesafe.ai/keys, put in ~/.zshrc
 ```
 ```
-/plugin marketplace add saksham-dev0/claude-plugin
+/plugin marketplace add saksham-dev0/Bouncer
 /plugin install bouncer@my-marketplace
 ```
 

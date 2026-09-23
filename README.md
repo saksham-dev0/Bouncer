@@ -9,7 +9,7 @@ Claude Code plugin marketplace.
 ## Install
 
 ```
-/plugin marketplace add saksham-dev0/claude-plugin
+/plugin marketplace add saksham-dev0/Bouncer
 /plugin install bouncer@my-marketplace
 ```
 
